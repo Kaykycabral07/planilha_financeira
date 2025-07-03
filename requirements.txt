@@ -1,0 +1,5 @@
+pandas
+customtkinter
+sqlalchemy
+pytest
+ipython
