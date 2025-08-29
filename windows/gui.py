@@ -1,4 +1,8 @@
 from customtkinter import * #type:ignore
+from tkinter import messagebox
+from utils import verify_email, verify_password
+from database.create_db import register_user_in_db, session, User
+
 
 class MainWindow(CTk):
     def __init__(self):
@@ -36,7 +40,7 @@ class MainWindow(CTk):
         CTkLabel(self.main_frame,
         text="Registrar:").grid(row=3,column=0,columnspan=2, pady=5, padx=10)
         
-        CTkButton(self.main_frame,text="login",
+        CTkButton(self.main_frame,text="registrar",
             command=self.show_register_frame
             ).grid(
                 row=4,
@@ -56,19 +60,19 @@ class MainWindow(CTk):
             )
         
         CTkLabel(self.login_frame, text="Insira seu email:").grid(row=1,column=0,pady=5, padx=10, sticky="e")
-        email_entry = CTkEntry(self.login_frame)
-        email_entry.grid(pady=5, padx=10, row=1, column=1)
+        self.email_entry = CTkEntry(self.login_frame)
+        self.email_entry.grid(pady=5, padx=10, row=1, column=1)
 
         CTkLabel(self.login_frame, text="Insira sua senha:").grid(row=2,column=0,pady=5, padx=10, sticky="e")
-        password_entry = CTkEntry(self.login_frame)
-        password_entry.grid(pady=5, padx=10, row=2, column=1 )
+        self.password_entry = CTkEntry(self.login_frame)
+        self.password_entry.grid(pady=5, padx=10, row=2, column=1 )
 
-        CTkButton(self.login_frame, text="Fazer login", command= lambda:[print("button clicked!")]).grid(row=3,columnspan=2, pady=10, padx=5 )
+        CTkButton(self.login_frame, text="Fazer login", command=self.login_user).grid(row=3,columnspan=2, pady=10, padx=5 )
 
         CTkButton(self.login_frame, text="Voltar", command= self.show_main_frame).grid(row=4,columnspan=2, pady=5, padx=5 )
 
         # Elementos da tela de registro
-        CTkLabel(self.login_frame,text="TELA DE REGISTRO"
+        CTkLabel(self.register_frame,text="TELA DE REGISTRO"
         ).grid(
             row=0,
             column=0,
@@ -76,10 +80,64 @@ class MainWindow(CTk):
             pady=20,
             )
         
-        CTkLabel(self.login_frame, text="Insira seu nome:").grid(row=1,column=0,pady=5, padx=10, sticky="e")
-        name_entry = CTkEntry(self.register_frame)
-        name_entry.grid(pady=5, padx=10, row=1, column=1)
+        CTkLabel(self.register_frame, text="Insira seu nome:").grid(row=1,column=0,pady=5, padx=10, sticky="e")
+        self.name_entry = CTkEntry(self.register_frame)
+        self.name_entry.grid(pady=5, padx=10, row=1, column=1)        
+        
+        CTkLabel(self.register_frame, text="Insira seu email:").grid(row=2,column=0,pady=5, padx=10, sticky="e")
+        self.email_register_entry = CTkEntry(self.register_frame)
+        self.email_register_entry.grid(pady=5, padx=10, row=2, column=1)
+        
+        CTkLabel(self.register_frame, text="Insira sua senha:").grid(row=3,column=0,pady=5, padx=10, sticky="e")
+        self.password_register_entry = CTkEntry(self.register_frame)
+        self.password_register_entry.grid(pady=5, padx=10, row=3, column=1 )
+        
+        CTkLabel(self.register_frame, text="Confirme sua senha:").grid(row=4,column=0,pady=5, padx=10, sticky="e")
+        self.confirm_password_entry = CTkEntry(self.register_frame)
+        self.confirm_password_entry.grid(pady=5, padx=10, row=4, column=1 )
+        
+        CTkButton(self.register_frame, text="Registrar", command= self.register_user).grid(row=5,columnspan=2, pady=10, padx=5 )
 
+        CTkButton(self.register_frame, text="Voltar", command= self.show_main_frame).grid(row=6,columnspan=2, pady=5, padx=5 )
+        
+        
+    def register_user(self):
+        name = self.name_entry.get()
+        email = self.email_register_entry.get()
+        password = self.password_register_entry.get()
+        confirm_password = self.confirm_password_entry.get()
+        
+        if not all([name, email, password, confirm_password]):
+            messagebox.showerror("Erro", "Todos os campos devem ser preenchidos!.")
+            return
+        
+        elif verify_email(email) is False:
+            messagebox.showerror("Erro", "Insira um email valido")
+            return
+        
+        elif verify_password(password, confirm_password) is False:
+            messagebox.showerror("Erro", "A senha tem que ser igual nos dois campos!.")
+            return
+        
+        register_user_in_db(name,email,password)
+        
+        
+    def login_user(self):
+        email = self.email_entry.get()
+        password = self.password_entry.get()
+        
+        if not email and password:
+            messagebox.showerror("Erro", "Primeiro insira os dados!.")
+            return
+        user = session.query(User).filter_by(email=email).first()
+        if not user:
+            messagebox.showerror("Erro", "Não existe usuario com esse email!.")
+            return
+        elif user.password != password:
+            messagebox.showerror("Erro", "A senha esta incorreta!.")
+            return
+        self.show_main_frame()
+        
     def show_main_frame(self):
         self.main_frame.pack()
         self.login_frame.pack_forget()
@@ -95,7 +153,3 @@ class MainWindow(CTk):
         self.main_frame.pack_forget()
         self.login_frame.pack_forget()
 
-if __name__ == "__main__":
-    app = MainWindow()
-    app.show_main_frame()
-    app.mainloop()
