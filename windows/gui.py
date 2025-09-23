@@ -1,22 +1,24 @@
 from customtkinter import * #type:ignore
 from tkinter import messagebox
+from tkinter import * #type: ignore
 from utils import verify_email, verify_password, encrypt_password, check_password
-from database.create_db import register_user_in_db, session, User
+from database.functions import register_user_in_db, User, Session
+from tkcalendar import DateEntry
 
 class MainWindow(CTk):
     def __init__(self):
         super().__init__()
 
         self.title("Aplicação para banco de dados")
-        self.geometry("550x550")
+        self.geometry("750x750")
 
         self.initial_frame = CTkFrame(self)
         self.main_frame = CTkFrame(self)
         self.login_frame = CTkFrame(self)
         self.register_frame = CTkFrame(self)
-
-        # Elementos da janela principal
-        CTkLabel(self.main_frame,text="BEM VINDO À MINHA APLICAÇÂO"
+        
+        # Elementos da janela inicial
+        CTkLabel(self.initial_frame,text="BEM VINDO À MINHA APLICAÇÂO"
         ).grid(
             row=0,
             column=0,
@@ -24,10 +26,10 @@ class MainWindow(CTk):
             pady=10,
             padx=15,
             sticky="n")
-        CTkLabel(self.main_frame,
+        CTkLabel(self.initial_frame,
         text="Logar na minha conta:").grid(row=1,column=0,columnspan=2, pady=5, padx=10)
         
-        CTkButton(self.main_frame,text="login",
+        CTkButton(self.initial_frame,text="login",
             command=self.show_login_frame
             ).grid(
                 row=2,
@@ -37,10 +39,10 @@ class MainWindow(CTk):
                 padx=10
             )
 
-        CTkLabel(self.main_frame,
+        CTkLabel(self.initial_frame,
         text="Registrar:").grid(row=3,column=0,columnspan=2, pady=5, padx=10)
         
-        CTkButton(self.main_frame,text="registrar",
+        CTkButton(self.initial_frame,text="registrar",
             command=self.show_register_frame
             ).grid(
                 row=4,
@@ -100,6 +102,20 @@ class MainWindow(CTk):
 
         CTkButton(self.register_frame, text="Voltar", command= self.show_initial_frame).grid(row=6,columnspan=2, pady=5, padx=5 )
         
+        # Elementos da tela principal
+        CTkLabel(self.main_frame, text="PLANILHA FINANCEIRA").grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            pady=20,)
+        
+        CTkLabel(self.main_frame, text="Data da transação").grid(row=1,column=0,pady=5, padx=10, sticky="e") 
+        self.date_entry = DateEntry(self.main_frame)
+        self.date_entry.grid(row=1, column=1, pady=5, padx=10)
+        
+        CTkLabel(self.main_frame, text="Tipo").grid(row=2, column=0, pady=5, padx=10, sticky="e")
+        self.combobox_type = CTkComboBox(self.main_frame, value=["Entrada", "Saida"])
+        self.combobox_type.grid(row=2, column=1, pady=5, padx=10)
         
     def register_user(self):
         name = self.name_entry.get()
@@ -121,6 +137,7 @@ class MainWindow(CTk):
         
         hashed = encrypt_password(password)
         register_user_in_db(name,email,password= hashed.decode("utf-8"))
+        messagebox.showinfo("Sucesso", "Sucesso ao registrar usuario!.")
         
         self.name_entry.delete("0", "end")
         self.email_register_entry.delete("0","end")
@@ -130,21 +147,24 @@ class MainWindow(CTk):
         self.show_initial_frame() 
         
     def login_user(self):
-        email = self.email_entry.get()
-        typed_password = self.password_entry.get()
-        
-        if not email and typed_password:
-            messagebox.showerror("Erro", "Primeiro insira os dados!.")
-            return
-        user = session.query(User).filter_by(email=email).first()
-        if not user:
-            messagebox.showerror("Erro", "Não existe usuario com esse email!.")
-            return        
-        
-        if check_password(stored_password= user.password, typed_password=typed_password):
-            self.email_entry.delete("0","end")
-            self.password_entry.delete("0", "end")
-            self.show_main_frame()
+        with Session() as session:
+            email = self.email_entry.get()
+            typed_password = self.password_entry.get()
+            
+            if not email and typed_password:
+                messagebox.showerror("Erro", "Primeiro insira os dados!.")
+                return
+            user = session.query(User).filter_by(email=email).first()
+            if not user:
+                messagebox.showerror("Erro", "Não existe usuario com esse email!.")
+                return        
+            
+            if check_password(stored_password= user.password, typed_password=typed_password):
+                self.email_entry.delete("0","end")
+                self.password_entry.delete("0", "end")
+                
+                messagebox.showinfo("Sucesso", "Login feito com sucesso!.")
+                self.show_main_frame()
         
     def show_initial_frame(self):
         self.initial_frame.pack()

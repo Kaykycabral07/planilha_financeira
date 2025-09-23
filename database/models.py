@@ -1,6 +1,5 @@
-from sqlalchemy import String, Integer, create_engine, DateTime
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import String, Integer, DateTime, ForeignKey, Float
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime
 
 
@@ -21,3 +20,13 @@ class User(Base):
         return f"<User(id={self.id}, nome={self.name}, email={self.email}, data_de_criacao={self.data_creation} )>"
 
 
+class Transaction(Base):
+    __tablename__ = "movimentacao_financeira"
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("usuario.id") )
+    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=True)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
